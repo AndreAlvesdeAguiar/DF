@@ -1,0 +1,67 @@
+import os
+from pdf2image import convert_from_path
+import pandas as pd
+import easyocr
+
+# Caminho para a pasta contendo os arquivos PDF de jogos
+pasta_pdf = '/home/andre/Downloads/raspagem/palmeiras_23'
+
+# Inicializar EasyOCR
+reader = easyocr.Reader(['pt'])  # Especifique o idioma
+
+def extrair_texto_pdf(arquivo_pdf):
+    caminho_pdf = os.path.join(pasta_pdf, arquivo_pdf)
+    imagens = convert_from_path(caminho_pdf, first_page=1, last_page=2)
+    texto_completo = ''
+    
+    for i, imagem in enumerate(imagens):
+        imagem_temporaria = f'temp_{i}.png'
+        imagem.save(imagem_temporaria)
+        resultado = reader.readtext(imagem_temporaria)
+        for (bbox, text, prob) in resultado:
+            texto_completo += text + '\n'
+    
+    return texto_completo
+
+def extrair_texto_todos_pdfs():
+    dados = []
+    for arquivo_pdf in os.listdir(pasta_pdf):
+        if arquivo_pdf.endswith('.pdf'):
+            print(f'Extraindo texto do arquivo: {arquivo_pdf}')
+            texto = extrair_texto_pdf(arquivo_pdf)
+            print(f'Texto extraído: {texto}')
+            dados.append(texto)
+    return dados
+
+# Extrair texto de todos os PDFs na pasta
+resultados = extrair_texto_todos_pdfs()
+
+# Exportar lista de resultados para um arquivo Excel
+nome_arquivo_excel = 'resultados_palmeiras.xlsx'
+df_resultados = pd.DataFrame(resultados, columns=['Texto'])
+df_resultados.to_excel(nome_arquivo_excel, index=False)
+
+print(f'Resultados exportados como "{nome_arquivo_excel}"')
+
+
+################################ simples #######################################
+
+
+import camelot
+import pandas as pd
+
+# Caminho para o arquivo PDF
+caminho_pdf = '/home/andre/Downloads/raspagem/palmeiras_23/jogo_3.pdf'
+
+# Extrair tabelas do PDF
+tabelas = camelot.read_pdf(caminho_pdf, flavor='stream')
+
+# Concatenar todas as tabelas em uma única tabela
+tabela_final = pd.concat([t.df for t in tabelas], ignore_index=True)
+
+# Salvar tabela em um arquivo Excel
+nome_arquivo_excel = 'tabelas_extraidas.xlsx'
+tabela_final.to_excel(nome_arquivo_excel, index=False)
+
+print(f'Tabelas extraídas e salvas como "{nome_arquivo_excel}"')
+
